@@ -1,0 +1,8 @@
+.streamlit/secrets.toml
+
+__pycache__/
+*.pyc
+
+rename_log.txt
+
+.env
