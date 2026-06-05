@@ -8,7 +8,7 @@ st.set_page_config(
 )
 
 st.title("Artwork Management Dashboard")
-
+st.write(st.secrets["dbname"])
 conn = get_connection()
 
 df = get_all_artworks()
