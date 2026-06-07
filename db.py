@@ -10,7 +10,7 @@ def get_connection():
             user=st.secrets["user"],
             password=st.secrets["password"],
             sslmode="require",
-            options="endpoint=ep-late-rain-a7epxzsy"
+            options="endpoint=ep-late-rain-a7epxzsy-pooler"
         )
 
     except Exception as e:
