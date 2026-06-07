@@ -3,19 +3,7 @@ import streamlit as st
 import psycopg
 
 def get_connection():
-    try:
-        return psycopg.connect(
-            host=st.secrets["host"],
-            dbname=st.secrets["dbname"],
-            user=st.secrets["user"],
-            password=st.secrets["password"],
-            sslmode="require",
-            options="endpoint=ep-late-rain-a7epxzsy-pooler"
-        )
-
-    except Exception as e:
-        st.error(str(e))
-        raise
+    return psycopg.connect(st.secrets["DATABASE_URL"])
 
 # def get_products():
 
