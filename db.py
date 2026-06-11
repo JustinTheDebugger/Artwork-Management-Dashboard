@@ -7,21 +7,18 @@ def get_connection():
         st.secrets["DATABASE_URL"]
     )
 
-# def get_products():
 
-# def get_artwork_by_product(product_code):
+def get_all_artworks():
+    conn = get_connection()
 
-# def get_latest_artwork():
+    query = """
+    SELECT
+        c.product_code,
+        p.product_name,
+        c.artwork_group
+    FROM vw_product_artwork_coverage_clean c
+    LEFT JOIN products p
+        ON c.product_code = p.product_code
+    """
 
-# def get_all_artworks():
-
-#     with get_connection() as conn:
-
-#         return pd.read_sql(
-#             """
-#             SELECT *
-#             FROM artwork_files
-#             ORDER BY release_date DESC
-#             """,
-#             conn
-#         )
+    return pd.read_sql(query, conn)

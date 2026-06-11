@@ -105,11 +105,11 @@ def format_matrix(matrix):
 # -------------------------
 
 st.set_page_config(
-    page_title="Artwork Dashboard",
+    page_title="Artwork Tracker",
     layout="wide"
 )
 
-st.title("📦 Artwork Completion Dashboard")
+st.title("📦 Artwork Tracker Dashboard")
 
 # -------------------------
 # LOAD
