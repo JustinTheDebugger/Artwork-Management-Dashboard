@@ -13,15 +13,15 @@ def get_connection():
 
 # def get_latest_artwork():
 
-def get_all_artworks():
+# def get_all_artworks():
 
-    with get_connection() as conn:
+#     with get_connection() as conn:
 
-        return pd.read_sql(
-            """
-            SELECT *
-            FROM artwork_files
-            ORDER BY release_date DESC
-            """,
-            conn
-        )
+#         return pd.read_sql(
+#             """
+#             SELECT *
+#             FROM artwork_files
+#             ORDER BY release_date DESC
+#             """,
+#             conn
+#         )
