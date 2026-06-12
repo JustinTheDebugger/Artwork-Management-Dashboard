@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-from db import get_connection
 from db import get_all_artworks
 
 st.set_page_config(
