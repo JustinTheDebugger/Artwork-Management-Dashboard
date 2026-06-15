@@ -1,6 +1,10 @@
 import streamlit as st
 import pandas as pd
 from db import get_connection
+from db import (
+    load_product_details,
+    update_artwork_requirement
+)
 
 # -------------------------
 # DB
@@ -235,3 +239,64 @@ st.dataframe(
     width="stretch",
     height=900
 )
+
+selected_product = st.selectbox(
+    "View Product Details",
+    options=filtered.index.tolist()
+)
+
+if selected_product:
+
+    product_code = selected_product.split(" - ")[0]
+
+    details_df = load_product_details(
+        product_code
+    )
+
+    details_df["Exists"] = details_df[
+        "Exists"
+    ].map(
+        lambda x: "✅" if x else "❌"
+    )
+
+    st.subheader(selected_product)
+
+    edited_df = st.data_editor(
+        details_df,
+        hide_index=True,
+        width="stretch",
+        column_config={
+            "Required": st.column_config.CheckboxColumn(
+                "Required"
+            )
+        },
+        disabled=[
+            "Artwork Type",
+            "Exists"
+        ]
+    )
+
+    for _, row in edited_df.iterrows():
+
+        original_required = details_df.loc[
+            details_df["Artwork Type"]
+            == row["Artwork Type"],
+            "Required"
+        ].iloc[0]
+
+        if original_required != row["Required"]:
+
+            with st.spinner(
+                f"Saving {row['Artwork Type']}..."
+            ):
+
+                update_artwork_requirement(
+                    product_code,
+                    row["Artwork Type"],
+                    row["Required"]
+                )
+
+            st.rerun()
+        
+
+    

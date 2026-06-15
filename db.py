@@ -22,3 +22,66 @@ def get_all_artworks():
     """
 
     return pd.read_sql(query, conn)
+
+def load_product_details(product_code):
+
+    sql = """
+    SELECT
+        r.artwork_group,
+        r.required,
+        CASE
+            WHEN c.product_code IS NOT NULL
+            THEN TRUE
+            ELSE FALSE
+        END AS exists
+    FROM product_artwork_requirements r
+
+    LEFT JOIN vw_product_artwork_coverage c
+        ON c.product_code = r.product_code
+        AND c.artwork_group = r.artwork_group
+
+    WHERE r.product_code = %s
+
+    ORDER BY r.artwork_group
+    """
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute(sql, (product_code,))
+
+            return pd.DataFrame(
+                cur.fetchall(),
+                columns=[
+                    "Artwork Type",
+                    "Required",
+                    "Exists"
+                ]
+            )
+
+def update_artwork_requirement(
+    product_code,
+    artwork_group,
+    required
+):
+
+    sql = """
+    UPDATE product_artwork_requirements
+    SET required = %s
+    WHERE product_code = %s
+      AND artwork_group = %s
+    """
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute(
+                sql,
+                (
+                    required,
+                    product_code,
+                    artwork_group
+                )
+            )
+
+        conn.commit()
