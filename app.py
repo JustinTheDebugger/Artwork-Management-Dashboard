@@ -6,6 +6,12 @@ home = st.Page(
     icon="🏠"
 )
 
+product_dashboard = st.Page(
+    "pages/product_dashboard.py",
+    title="Dashboard",
+    icon="📊"
+)
+
 artwork_dashboard = st.Page(
     "pages/artwork_dashboard.py",
     title="Dashboard",
@@ -51,6 +57,9 @@ fulfilment = st.Page(
 pg = st.navigation(
     {
         "": [home],
+        "Product Management": [
+            product_dashboard
+        ],
         "Artwork Management": [
             artwork_dashboard,
             artwork_tracker
