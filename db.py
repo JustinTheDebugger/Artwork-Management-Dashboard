@@ -85,3 +85,67 @@ def update_artwork_requirement(
             )
 
         conn.commit()
+
+def get_requirements(product_code):
+
+    sql = """
+    SELECT artwork_group
+    FROM product_artwork_requirements
+    WHERE product_code = %s
+    """
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (product_code,))
+            return [r[0] for r in cur.fetchall()]
+        
+def get_existing(product_code):
+
+    sql = """
+    SELECT DISTINCT artwork_group
+    FROM artwork_files
+    WHERE full_product_code = %s
+    """
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+            cur.execute(sql, (product_code,))
+            return {r[0] for r in cur.fetchall()}
+        
+
+def load_product_details(product_code):
+
+    # 1. ALL required artwork groups
+    req_sql = """
+    SELECT artwork_group
+    FROM product_artwork_requirements
+    WHERE product_code = %s
+    """
+
+    # 2. ALL existing uploads
+    exist_sql = """
+    SELECT DISTINCT artwork_group
+    FROM artwork_files
+    WHERE full_product_code = %s
+    """
+
+    with get_connection() as conn:
+        with conn.cursor() as cur:
+
+            cur.execute(req_sql, (product_code,))
+            required = [r[0] for r in cur.fetchall()]
+
+            cur.execute(exist_sql, (product_code,))
+            existing = {r[0] for r in cur.fetchall()}
+
+    # 3. FORCE FULL MATRIX (this is the key)
+    rows = []
+
+    for r in required:
+        rows.append({
+            "Artwork Type": r,
+            "Required": "✅",
+            "Exists": "✅" if r in existing else "❌"
+        })
+
+    return pd.DataFrame(rows)
