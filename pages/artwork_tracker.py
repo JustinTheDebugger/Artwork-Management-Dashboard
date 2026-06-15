@@ -5,9 +5,6 @@ from db import (
     load_product_details,
     update_artwork_requirement
 )
-from db import get_requirements
-from db import get_existing
-from db import load_product_details
 
 # -------------------------
 # DB
@@ -241,11 +238,6 @@ filtered["Missing"] = (
 # DISPLAY
 # -------------------------
 
-selected_product = st.selectbox(
-    "View Product Details",
-    options=filtered["product"].tolist()
-)
-
 st.dataframe(
     filtered,
     width="stretch",
@@ -254,7 +246,7 @@ st.dataframe(
 
 selected_product = st.selectbox(
     "View Product Details",
-    options=filtered.index.tolist()
+    options=filtered["product"].tolist()
 )
 
 if selected_product:
@@ -309,45 +301,5 @@ if selected_product:
                 )
 
             st.rerun()
-        
-
-    
-
-# if selected_product:
-
-#     product_code = selected_product.split(" - ")[0]
-
-#     required = get_requirements(product_code)
-#     existing = get_existing(product_code)
-
-#     rows = []
-
-#     for r in required:
-#         rows.append({
-#             "Artwork Type": r,
-#             "Required": "✅",
-#             "Exists": "✅" if r in existing else "❌"
-#         })
-
-#     details_df = pd.DataFrame(rows)
-
-#     st.subheader(selected_product)
-
-#     st.dataframe(details_df, use_container_width=True, hide_index=True)
-
-if selected_product:
-
-    product_code = selected_product.split(" - ")[0]
-
-    details_df = load_product_details(product_code)
-
-    st.subheader(selected_product)
-
-    st.dataframe(
-        details_df,
-        use_container_width=True,
-        hide_index=True,
-        height=455
-    )
 
     
