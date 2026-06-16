@@ -27,13 +27,20 @@ def load_product_details(product_code):
 
     sql = """
     SELECT
-        r.artwork_group,
-        r.required,
+        r.artwork_group AS "Artwork Type",
+        r.required AS "Required",
+
         CASE
+            WHEN r.required = FALSE
+                THEN 'NOT_REQUIRED'
+
             WHEN c.product_code IS NOT NULL
-            THEN TRUE
-            ELSE FALSE
-        END AS exists
+                THEN 'YES'
+
+            ELSE 'NO'
+
+        END AS "Status"
+
     FROM product_artwork_requirements r
 
     LEFT JOIN vw_product_artwork_coverage c
@@ -42,20 +49,24 @@ def load_product_details(product_code):
 
     WHERE r.product_code = %s
 
-    ORDER BY r.artwork_group
+    ORDER BY
+        r.artwork_group
     """
 
     with get_connection() as conn:
         with conn.cursor() as cur:
 
-            cur.execute(sql, (product_code,))
+            cur.execute(
+                sql,
+                (product_code,)
+            )
 
             return pd.DataFrame(
                 cur.fetchall(),
                 columns=[
                     "Artwork Type",
                     "Required",
-                    "Exists"
+                    "Status"
                 ]
             )
 

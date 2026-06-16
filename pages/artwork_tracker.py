@@ -26,11 +26,14 @@ def load_data():
             '(Unknown Product)'
         ) AS product_name,
         r.artwork_group,
+        r.required,
         CASE
+            WHEN r.required = FALSE
+                THEN 'NOT_REQUIRED'
             WHEN c.product_code IS NOT NULL
-            THEN 'YES'
+                THEN 'YES'
             ELSE 'NO'
-        END AS status
+        END AS artwork_status
     FROM product_artwork_requirements r
 
     LEFT JOIN vw_product_artwork_coverage c
@@ -39,8 +42,6 @@ def load_data():
 
     LEFT JOIN products p
         ON p.product_code = r.product_code
-
-    WHERE r.required = TRUE
 
     ORDER BY
         r.product_code,
@@ -67,9 +68,12 @@ def build_matrix(rows):
             "product_code",
             "product_name",
             "artwork_group",
-            "status"
+            "required",
+            "artwork_status"
         ]
     )
+
+    
 
     df["product"] = (
         df["product_code"]
@@ -80,17 +84,13 @@ def build_matrix(rows):
     matrix = df.pivot_table(
         index="product",
         columns="artwork_group",
-        values="status",
+        values="artwork_status",
         aggfunc="first",
         fill_value="NO"
     )
 
     return matrix
 
-
-# -------------------------
-# FORMAT
-# -------------------------
 
 def format_matrix(matrix):
 
@@ -99,10 +99,12 @@ def format_matrix(matrix):
         if value == "YES":
             return "✅"
 
+        if value == "NOT_REQUIRED":
+            return "➖"
+
         return "❌"
 
     return matrix.map(convert)
-
 
 # -------------------------
 # PAGE
@@ -121,13 +123,40 @@ st.title("📦 Artwork Tracker Dashboard")
 
 rows = load_data()
 
+st.write(rows[0])
+
 matrix = build_matrix(rows)
 
 display = format_matrix(matrix)
 
 display = display.reset_index()
 
+# -------------------------
+# COMPLETE STATUS
+# -------------------------
+
+artwork_cols = [
+    col
+    for col in display.columns
+    if col not in [
+        "product",
+        "Complete"
+    ]
+]
+
+display["Complete"] = (
+    ~display[artwork_cols]
+    .eq("❌")
+    .any(axis=1)
+)
+
+display["Complete"] = display["Complete"].map(
+    lambda x: "YES" if x else "NO"
+)
+
 filtered = display.copy()
+
+
 
 # -------------------------
 # METRICS
@@ -135,22 +164,36 @@ filtered = display.copy()
 
 total_products = len(display)
 
-complete_products = (
-    display.eq("✅")
-    .all(axis=1)
+total_missing = (
+    display[artwork_cols]
+    .eq("❌")
+    .sum()
     .sum()
 )
 
+complete_products = (
+    display["Complete"]
+    == "YES"
+).sum()
+
 incomplete_products = (
-    total_products
-    - complete_products
+    display["Complete"]
+    == "NO"
+).sum()
+
+total_required = (
+    len(display)
+    * len(artwork_cols)
 )
 
-completion_rate = (
-    complete_products
-    / total_products
+coverage_rate = (
+    (
+        total_required
+        - total_missing
+    )
+    / total_required
     * 100
-    if total_products
+    if total_required
     else 0
 )
 
@@ -172,9 +215,13 @@ col3.metric(
 )
 
 col4.metric(
-    "Completion %",
-    f"{completion_rate:.1f}%"
+    "Artwork Coverage %",
+    f"{coverage_rate:.1f}%"
 )
+
+
+
+
 
 # -------------------------
 # FILTERS
@@ -201,7 +248,8 @@ filtered = display.copy()
 if search_text:
 
     filtered = filtered[
-        filtered.index.str.contains(
+        filtered["product"]
+        .str.contains(
             search_text,
             case=False,
             na=False
@@ -213,8 +261,7 @@ if search_text:
 if show_missing_only:
 
     filtered = filtered[
-        ~(filtered == "✅")
-        .all(axis=1)
+        filtered["Complete"] == "NO"
     ]
 
 # Complete
@@ -222,17 +269,8 @@ if show_missing_only:
 if show_complete_only:
 
     filtered = filtered[
-        (filtered == "✅")
-        .all(axis=1)
+        filtered["Complete"] == "YES"
     ]
-
-# -------------------------
-# MISSING COUNT
-# -------------------------
-
-filtered["Missing"] = (
-    filtered == "❌"
-).sum(axis=1)
 
 # -------------------------
 # DISPLAY
@@ -257,11 +295,15 @@ if selected_product:
         product_code
     )
 
-    details_df["Exists"] = details_df[
-        "Exists"
-    ].map(
-        lambda x: "✅" if x else "❌"
+    # convert status to icons
+    details_df["Status"] = details_df["Status"].map(
+        lambda x:
+            "✅" if x == "YES"
+            else "➖" if x == "NOT_REQUIRED"
+            else "❌"
     )
+
+    original_df = details_df.copy()
 
     st.subheader(selected_product)
 
@@ -276,14 +318,14 @@ if selected_product:
         },
         disabled=[
             "Artwork Type",
-            "Exists"
+            "Status"
         ]
     )
 
     for _, row in edited_df.iterrows():
 
-        original_required = details_df.loc[
-            details_df["Artwork Type"]
+        original_required = original_df.loc[
+            original_df["Artwork Type"]
             == row["Artwork Type"],
             "Required"
         ].iloc[0]
