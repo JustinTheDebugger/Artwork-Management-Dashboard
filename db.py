@@ -122,3 +122,90 @@ def get_existing(product_code):
         with conn.cursor() as cur:
             cur.execute(sql, (product_code,))
             return {r[0] for r in cur.fetchall()}
+        
+def get_upload_files(upload_id):
+
+    conn = get_connection()
+
+    query = """
+    SELECT
+        af.id,
+        COALESCE(p.product_name, af.product_name) AS product_name,
+        af.artwork_group,
+        af.filename,
+        af.file_path,
+        af.dropbox_link,
+        af.status,
+        af.uploaded_at
+
+    FROM artwork_files af
+
+    LEFT JOIN products p
+        ON af.full_product_code = p.product_code
+
+    WHERE af.upload_id = %s
+
+    ORDER BY
+        af.id
+    """
+
+    cur = conn.cursor()
+
+    cur.execute(
+        query,
+        (upload_id,)
+    )
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows
+        
+def get_upload_batches():
+
+    conn = get_connection()
+
+    query = """
+    SELECT
+        af.upload_id,
+
+        COUNT(af.id) AS files,
+
+        STRING_AGG(
+            DISTINCT COALESCE(
+                p.product_name,
+                af.product_name,
+                af.full_product_code,
+                'Unknown Product'
+            ),
+            ', '
+        ) AS products,
+
+        MAX(af.uploaded_at) AS uploaded,
+
+        MAX(af.status) AS status
+
+    FROM artwork_files af
+
+    LEFT JOIN products p
+        ON af.full_product_code = p.product_code
+
+    GROUP BY
+        af.upload_id
+
+    ORDER BY
+        MAX(af.uploaded_at) DESC
+    """
+
+    cur = conn.cursor()
+
+    cur.execute(query)
+
+    rows = cur.fetchall()
+
+    cur.close()
+    conn.close()
+
+    return rows

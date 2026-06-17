@@ -18,6 +18,12 @@ artwork_dashboard = st.Page(
     icon="📊"
 )
 
+artwork_review = st.Page(
+    "pages/artwork_review.py",
+    title="Artwork Review",
+    icon="📥"
+)  
+
 artwork_tracker = st.Page(
     "pages/artwork_tracker.py",
     title="Artwork Tracker",
@@ -62,6 +68,7 @@ pg = st.navigation(
         ],
         "Artwork Management": [
             artwork_dashboard,
+            artwork_review,
             artwork_tracker
         ],
         "Sample Management": [
