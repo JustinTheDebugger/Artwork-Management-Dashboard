@@ -109,6 +109,7 @@ if selected_batch:
 
 
     # Display cleaner table
+
     display_df = files_df[
         [
             "Product",
@@ -118,7 +119,6 @@ if selected_batch:
             "Uploaded"
         ]
     ]
-
 
     st.dataframe(
         display_df,
@@ -171,13 +171,19 @@ if selected_batch:
             artwork["Artwork Group"]
         )
 
+        st.write("**Artwork File**")
 
-        st.write(
-            "**Filename**"
-        )
-        st.write(
-            artwork["Filename"]
-        )
+        if pd.notna(artwork["Storage URL"]) and artwork["Storage URL"]:
+
+            st.markdown(
+                f"📄 [{artwork['Filename']}]({artwork['Storage URL']})"
+            )
+
+        else:
+
+            st.write(
+                f"📄 {artwork['Filename']}"
+            )
 
 
     with col2:
