@@ -96,7 +96,7 @@ if selected_batch:
             "Artwork Group",
             "Filename",
             "File Path",
-            "Dropbox Link",
+            "Storage URL",
             "Status",
             "Uploaded"
         ]

@@ -134,7 +134,7 @@ def get_upload_files(upload_id):
         af.artwork_group,
         af.filename,
         af.file_path,
-        af.dropbox_link,
+        af.storage_url,
         af.status,
         af.uploaded_at
 
