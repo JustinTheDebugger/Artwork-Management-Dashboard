@@ -1,5 +1,29 @@
 import streamlit as st
 
+test_supabase = st.Page(
+    "pages/test_supabase.py",
+    title="Test Supabase Connection",
+    icon="🧪"
+)
+
+test_create_samples = st.Page(
+    "pages/test_create_samples.py",
+    title="Test Create Samples",
+    icon="🧪"
+)
+
+test_sample_service = st.Page(
+    "pages/test_sample_generation.py",
+    title="Test Sample Service",
+    icon="🧪"
+)
+
+test_qr_service = st.Page(
+    "pages/test_qr.py",
+    title="Test QR Service",
+    icon="🧪"
+)
+
 home = st.Page(
     "pages/home.py",
     title="Home",
@@ -77,6 +101,12 @@ pg = st.navigation(
             sample_intake,
             bookings,
             fulfilment
+        ],
+        "Tests": [
+            test_sample_service,
+            test_qr_service,
+            test_create_samples,
+            test_supabase
         ]
     }
 )

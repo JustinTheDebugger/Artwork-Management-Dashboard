@@ -2,3 +2,6 @@ streamlit
 pandas
 psycopg[binary]
 plotly
+qrcode[pil]
+supabase
+python-dotenv

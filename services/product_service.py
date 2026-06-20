@@ -198,3 +198,23 @@ def get_product(product_code):
     conn.close()
 
     return df
+
+def product_exists(product_code):
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    cur.execute(
+        """
+        SELECT 1
+        FROM products
+        WHERE product_code = %s
+        """,
+        (product_code,)
+    )
+
+    result = cur.fetchone()
+
+    conn.close()
+
+    return result is not None
