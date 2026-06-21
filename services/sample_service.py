@@ -1,3 +1,4 @@
+import os
 from db import get_connection
 from datetime import datetime
 import pandas as pd
@@ -67,7 +68,74 @@ def get_bin_locations():
 
     return df
 
-# CREATE NEW NIN LOCATION
+
+# GET SAMPLE DETAILS
+def get_sample_detail(sample_id):
+
+    conn = get_connection()
+
+    query = """
+    SELECT
+        s.*,
+        st.sample_type_name,
+        b.bin_name
+
+    FROM samples s
+
+    LEFT JOIN sample_types st
+        ON s.sample_type_code = st.sample_type_code
+
+    LEFT JOIN bin_locations b
+        ON s.bin_location = b.bin_code
+
+    WHERE s.sample_id = %s
+    """
+
+    df = pd.read_sql(
+        query,
+        conn,
+        params=[sample_id]
+    )
+
+    conn.close()
+
+    if df.empty:
+        return None
+
+    return df.iloc[0]
+
+# GET SMAPLE MOVEMENTS
+def get_sample_movements(sample_id):
+
+    conn = get_connection()
+
+    query = """
+    SELECT
+        movement_type,
+        from_location,
+        to_location,
+        remarks,
+        performed_by,
+        created_at
+
+    FROM sample_movements
+
+    WHERE sample_id = %s
+
+    ORDER BY created_at DESC
+    """
+
+    df = pd.read_sql(
+        query,
+        conn,
+        params=[sample_id]
+    )
+
+    conn.close()
+
+    return df
+
+# CREATE NEW BIN LOCATION
 def create_bin_location(
     bin_code,
     bin_name
@@ -102,6 +170,76 @@ def create_bin_location(
     finally:
 
         conn.close()
+
+# CREATE SAMPLE PHOTOS
+def create_sample_photo(
+    sample_id,
+    file_url,
+    uploaded_by
+):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            INSERT INTO sample_photos
+            (
+                sample_id,
+                file_url,
+                uploaded_by
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                sample_id,
+                file_url,
+                uploaded_by
+            )
+        )
+
+        conn.commit()
+
+    except:
+
+        conn.rollback()
+        raise
+
+    finally:
+
+        conn.close()  
+
+# DISPALY PHOTOS
+def get_sample_photos(
+    sample_id
+):
+
+    conn = get_connection()
+
+    query = """
+    SELECT
+        file_url
+    FROM sample_photos
+    WHERE sample_id = %s
+    ORDER BY uploaded_at
+    """
+
+    df = pd.read_sql(
+        query,
+        conn,
+        params=[sample_id]
+    )
+
+    conn.close()
+
+    return df
+
 
 # GET NEXT SAMPLE SEQUENCE
 def get_next_sequence(
@@ -244,6 +382,8 @@ def create_samples(
                 sample_id,
                 qr_path
             )
+
+            os.remove(qr_path)
 
             cur.execute(
                 """

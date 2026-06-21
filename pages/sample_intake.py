@@ -13,7 +13,12 @@ from services.sample_service import (
     get_bin_locations,
     generate_sample_ids,
     generate_sample_name,
-    create_samples
+    create_samples,
+    create_sample_photo
+)
+
+from services.storage_service import (
+    upload_sample_photo
 )
 
 created_by = 'Justin'
@@ -193,7 +198,12 @@ if "sample_preview" not in st.session_state:
 
     photos = st.file_uploader(
         "Photos",
-        accept_multiple_files=True
+        accept_multiple_files=True,
+        type=[
+            "png",
+            "jpg",
+            "jpeg"
+        ]
     )
 
     if st.button(
@@ -223,7 +233,8 @@ if "sample_preview" not in st.session_state:
             "bin_name": bin_location["name"],
             "remarks": remarks,
             "sample_name": sample_name,
-            "sample_ids": sample_ids
+            "sample_ids": sample_ids,
+            "photos": photos
         }
 
         st.rerun()
@@ -284,6 +295,23 @@ else:
                     preview["remarks"],
                     created_by
                 )
+
+                if preview["photos"]:
+
+                    for sample_id in samples:
+
+                        for photo in preview["photos"]:
+
+                            photo_url = upload_sample_photo(
+                                sample_id,
+                                photo
+                            )
+
+                            create_sample_photo(
+                                sample_id,
+                                photo_url,
+                                created_by
+                            )
 
                 st.session_state.sample_created = {
                     "count": len(samples),
