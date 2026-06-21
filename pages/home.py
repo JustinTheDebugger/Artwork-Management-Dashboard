@@ -6,7 +6,7 @@ st.set_page_config(
     layout="wide"
 )
 
-st.title("🏠 Product Lifecycle Management System")
+st.title("🏠 Product Lifecycle Management System V1.0")
 
 st.markdown(
     """
