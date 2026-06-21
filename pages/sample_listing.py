@@ -6,7 +6,8 @@ from services.sample_service import (
     get_bin_locations,
     get_sample_detail,
     get_sample_movements,
-    get_sample_photos
+    get_sample_photos,
+    update_sample
 )
 
 st.title(
@@ -106,6 +107,76 @@ selected_bin = st.selectbox(
 bin_code = bin_options[
     selected_bin
 ]
+
+@st.dialog("Edit Sample")
+def edit_sample_dialog():
+
+    bins = get_bin_locations()
+
+    bin_codes = bins["bin_code"].tolist()
+
+    current_index = 0
+
+    if detail.bin_location in bin_codes:
+        current_index = bin_codes.index(
+            detail.bin_location
+        )
+
+    new_bin = st.selectbox(
+        "Bin Location",
+        bin_codes,
+        index=current_index
+    )
+
+    status_options = [
+        "AVAILABLE",
+        "RESERVED",
+        "MISSING",
+        "RETIRED"
+    ]
+
+    status_index = 0
+
+    if detail.sample_status in status_options:
+        status_index = status_options.index(
+            detail.sample_status
+        )
+
+    new_status = st.selectbox(
+        "Status",
+        status_options,
+        index=status_index
+    )
+
+    current_holder = st.text_input(
+        "Current Holder",
+        value=detail.current_holder or ""
+    )
+
+    remarks = st.text_area(
+        "Remarks",
+        value=detail.remarks or ""
+    )
+
+    if st.button(
+        "Save Changes",
+        type="primary"
+    ):
+
+        update_sample(
+            sample_id=detail.sample_id,
+            bin_location=new_bin,
+            sample_status=new_status,
+            current_holder=current_holder,
+            remarks=remarks,
+            updated_by="Justin"
+        )
+
+        st.session_state.success_message = (
+            "Sample updated successfully"
+        )
+
+        st.rerun()
 
 
 # =========================
@@ -256,9 +327,10 @@ if not samples.empty:
 
     with col1:
 
-        st.button(
+        if st.button(
             "✏ Edit Sample"
-        )
+        ):
+            edit_sample_dialog()
 
     with col2:
 

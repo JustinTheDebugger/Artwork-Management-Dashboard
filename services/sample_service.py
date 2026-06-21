@@ -417,32 +417,14 @@ def create_samples(
                     received_date,
                     batch,
                     created_by
-                )
-            )
+                )            )
 
-            cur.execute(
-                """
-                INSERT INTO sample_movements (
-                    sample_id,
-                    movement_type,
-                    to_location,
-                    remarks,
-                    performed_by
-                )
-                VALUES (
-                    %s,
-                    'CREATE',
-                    %s,
-                    %s,
-                    %s
-                )
-                """,
-                (
-                    sample_id,
-                    bin_location,
-                    remarks,
-                    created_by
-                )
+            create_sample_movement(
+                sample_id=sample_id,
+                movement_type="RECEIVED",
+                to_location=bin_location,
+                remarks=remarks or "Sample received into inventory",
+                performed_by=created_by
             )
 
             created_samples.append(
@@ -587,3 +569,136 @@ def get_samples(
     conn.close()
 
     return df
+
+# CREATE SAMPLE MOVEMENT
+def create_sample_movement(
+    sample_id,
+    movement_type,
+    from_location=None,
+    to_location=None,
+    booking_id=None,
+    remarks=None,
+    performed_by=None
+):
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            INSERT INTO sample_movements
+            (
+                sample_id,
+                movement_type,
+                from_location,
+                to_location,
+                booking_id,
+                remarks,
+                performed_by
+            )
+            VALUES
+            (
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s,
+                %s
+            )
+            """,
+            (
+                sample_id,
+                movement_type,
+                from_location,
+                to_location,
+                booking_id,
+                remarks,
+                performed_by
+            )
+        )
+
+        conn.commit()
+
+    except:
+
+        conn.rollback()
+        raise
+
+    finally:
+
+        conn.close()
+
+# UPDATE SAMPLE
+def update_sample(
+    sample_id,
+    bin_location,
+    sample_status,
+    current_holder,
+    remarks,
+    updated_by
+):
+    sample = get_sample_detail(
+        sample_id
+    )
+
+    old_bin = sample.bin_location
+    old_status = sample.sample_status
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+    try:
+
+        cur.execute(
+            """
+            UPDATE samples
+            SET
+                bin_location = %s,
+                sample_status = %s,
+                current_holder = %s,
+                remarks = %s,
+                updated_by = %s,
+                updated_at = NOW()
+            WHERE sample_id = %s
+            """,
+            (
+                bin_location,
+                sample_status,
+                current_holder,
+                remarks,
+                updated_by,
+                sample_id
+            )
+        )
+
+        conn.commit()
+
+    except:
+
+        conn.rollback()
+        raise
+
+    finally:
+
+        conn.close()
+
+    if old_bin != bin_location:
+
+        create_sample_movement(
+            sample_id=sample_id,
+            movement_type="LOCATION_CHANGE",
+            from_location=old_bin,
+            to_location=bin_location,
+            performed_by=updated_by
+        )
+
+    if old_status != sample_status:
+
+        create_sample_movement(
+            sample_id=sample_id,
+            movement_type="STATUS_CHANGE",
+            remarks=f"{old_status} -> {sample_status}",
+            performed_by=updated_by
+        )
