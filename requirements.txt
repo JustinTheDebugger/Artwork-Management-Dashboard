@@ -5,3 +5,4 @@ plotly
 qrcode[pil]
 supabase
 python-dotenv
+streamlit-calendar

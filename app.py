@@ -73,8 +73,8 @@ sample_intake = st.Page(
 )
 
 bookings = st.Page(
-    "pages/bookings.py",
-    title="Bookings",
+    "pages/booking.py",
+    title="Booking",
     icon="📅"
 )
 
