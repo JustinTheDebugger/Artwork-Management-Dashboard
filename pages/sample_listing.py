@@ -6,8 +6,7 @@ from services.sample_service import (
     get_bin_locations,
     get_sample_detail,
     get_sample_movements,
-    get_sample_photos,
-    update_sample
+    get_sample_photos
 )
 
 st.title(
