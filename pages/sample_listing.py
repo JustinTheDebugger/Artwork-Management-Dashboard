@@ -6,7 +6,8 @@ from services.sample_service import (
     get_bin_locations,
     get_sample_detail,
     get_sample_movements,
-    get_sample_photos
+    get_sample_photos,
+    update_sample
 )
 
 st.title(
@@ -303,7 +304,7 @@ if not samples.empty:
 
             cols[idx % 3].image(
                 photo,
-                use_container_width=True
+                width='stretch'
             )
 
     # MOVEMENT HISTORY
