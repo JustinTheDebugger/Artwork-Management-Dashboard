@@ -304,12 +304,28 @@ def generate_sample_ids(
 
     return sample_ids
 
-SAMPLE_TYPE_NAMES = {
-    "MAS": "Master Sample",
-    "SMS": "Salesman Sample",
-    "DEV": "Development Sample",
-    "PP": "Preproduction Sample"
-}
+
+# GET SAMPLE TYPE
+def get_sample_type_names():
+    conn = get_connection()
+
+    sql = """
+    SELECT
+        sample_type_code,
+        sample_type_name
+    FROM sample_types
+    WHERE active = TRUE
+    """
+
+    df = pd.read_sql(sql, conn)
+    conn.close()
+
+    return dict(
+        zip(
+            df["sample_type_code"],
+            df["sample_type_name"]
+        )
+    )
 
 # GENERATE SAMPLE NAME
 def generate_sample_name(
@@ -317,6 +333,8 @@ def generate_sample_name(
     sample_type_code,
     received_date
 ):
+    SAMPLE_TYPE_NAMES = get_sample_type_names()
+
     sample_type_name = SAMPLE_TYPE_NAMES.get(
         sample_type_code,
         sample_type_code
