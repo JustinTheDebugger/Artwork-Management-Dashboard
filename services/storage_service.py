@@ -36,7 +36,8 @@ def upload_file(
             path=storage_path,
             file=f,
             file_options={
-                "content-type": "image/png"
+                "content-type": "image/png",
+                "upsert": "true"
             }
         )
 
@@ -86,7 +87,8 @@ def upload_sample_photo(
         file=uploaded_file.getvalue(),
         file_options={
             "content-type":
-            uploaded_file.type
+            uploaded_file.type,
+            "upsert": "true"
         }
     )
 

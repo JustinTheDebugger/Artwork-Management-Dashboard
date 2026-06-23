@@ -11,10 +11,9 @@ from services.product_service import (
 from services.sample_service import (
     get_sample_types,
     get_bin_locations,
-    generate_sample_ids,
-    generate_sample_name,
     create_samples,
-    create_sample_photo
+    create_sample_photo,
+    preview_sample_creation
 )
 
 from services.storage_service import (
@@ -133,19 +132,44 @@ if "new_product" in st.session_state:
 
 if "sample_preview" not in st.session_state:
 
-    selected = st.selectbox(
-        "Product *",
-        product_options.keys(),
-        index=default_index
+    # Select registration mode
+    registration_mode = st.radio(
+        "Sample Registration Type",
+        [
+            "Prototype Sample",
+            "Existing Product"
+        ],
+        horizontal=True
     )
 
-    selected_product = product_options[selected]
+    product_code = None
+    product_name = None
+    prototype_name = None
 
-    product_code = selected_product.product_code
-    product_name = selected_product.product_name
+    if registration_mode == "Existing Product":
 
-    if st.button("➕ New Product"):
-        show_product_modal()
+        selected = st.selectbox(
+            "Product *",
+            product_options.keys(),
+            index=default_index
+        )
+
+        selected_product = product_options[selected]
+
+        product_code = selected_product.product_code
+        product_name = selected_product.product_name
+
+        if st.button(
+            "➕ New Product"
+        ):
+            show_product_modal()
+
+    else:
+
+        prototype_name = st.text_input(
+            "Prototype Name *",
+            placeholder="New Sample Name V3"
+        )
 
     sample_types = get_sample_types()
 
@@ -162,6 +186,14 @@ if "sample_preview" not in st.session_state:
     sample_type_code = sample_type_options[
         selected_sample_type
     ]
+
+    if (
+        registration_mode == "Prototype Sample"
+        and sample_type_code != "DEV"
+    ):
+        st.warning(
+            "Prototype samples should use Development Sample type."
+        )
 
     quantity = st.number_input(
         "Quantity *",
@@ -182,6 +214,8 @@ if "sample_preview" not in st.session_state:
         }
         for _, row in bins.iterrows()
     }
+
+    
 
     selected_bin = st.selectbox(
         "Bin Location *",
@@ -211,29 +245,41 @@ if "sample_preview" not in st.session_state:
         type="primary"
     ):
 
-        sample_ids = generate_sample_ids(
-            product_code,
-            sample_type_code,
-            quantity
-        )
-
-        sample_name = generate_sample_name(
-            product_name,
-            sample_type_code,
-            received_date
+        preview_data = preview_sample_creation(
+            product_code=product_code,
+            product_name=product_name,
+            prototype_name=prototype_name,
+            sample_type_code=sample_type_code,
+            quantity=quantity,
+            received_date=received_date
         )
 
         st.session_state.sample_preview = {
+
             "product_code": product_code,
             "product_name": product_name,
+
+            "prototype_name": prototype_name,
+
             "sample_type": sample_type_code,
+
             "quantity": quantity,
+
             "received_date": received_date,
+
             "bin_location": bin_location["code"],
             "bin_name": bin_location["name"],
+
             "remarks": remarks,
-            "sample_name": sample_name,
-            "sample_ids": sample_ids,
+
+            "sample_name": preview_data[
+                "sample_name"
+            ],
+
+            "sample_ids": preview_data[
+                "sample_ids"
+            ],
+
             "photos": photos
         }
 
@@ -249,8 +295,17 @@ else:
 
     st.subheader("Preview")
 
+    sample_reference = (
+        preview["product_name"]
+        if preview["product_name"]
+        else preview["prototype_name"]
+    )
+
     st.info(
         f"""
+        Reference:
+        {sample_reference}
+
         Sample Name:
         {preview['sample_name']}
 
@@ -286,14 +341,16 @@ else:
             try:
 
                 samples = create_samples(
-                    preview["product_code"],
-                    preview["product_name"],
-                    preview["sample_type"],
-                    preview["quantity"],
-                    preview["received_date"],
-                    preview["bin_location"],
-                    preview["remarks"],
-                    created_by
+                    product_code=preview["product_code"],
+                    product_name=preview["product_name"],
+                    prototype_name=preview["prototype_name"],
+                    sample_type_code=preview["sample_type"],
+                    quantity=preview["quantity"],
+                    received_date=preview["received_date"],
+                    bin_location=preview["bin_location"],
+                    remarks=preview["remarks"],
+                    photos=preview["photos"],
+                    created_by=created_by
                 )
 
                 if preview["photos"]:

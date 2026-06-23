@@ -6,3 +6,4 @@ qrcode[pil]
 supabase
 python-dotenv
 streamlit-calendar
+streamlit-qrcode-scanner

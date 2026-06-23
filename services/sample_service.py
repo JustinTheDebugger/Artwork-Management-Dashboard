@@ -277,32 +277,104 @@ def get_next_sequence(
 
     return next_seq
 
-# GENERATE SAMPLE IDS
+# GENERATE UNIQUE SAMPLE ID
 def generate_sample_ids(
-    product_code,
-    sample_type_code,
-    quantity
+    product_code=None,
+    sample_type_code=None,
+    quantity=1
 ):
-    start_seq = get_next_sequence(
-        product_code,
-        sample_type_code
-    )
+
+    conn = get_connection()
+    cur = conn.cursor()
 
     sample_ids = []
 
-    for i in range(quantity):
+    try:
 
-        seq = start_seq + i
+        if product_code:
 
-        sample_id = (
-            f"{product_code}S-"
-            f"{sample_type_code}-"
-            f"{seq:02d}"
-        )
+            prefix = (
+                f"{product_code}S-{sample_type_code}-"
+            )
 
-        sample_ids.append(sample_id)
+            cur.execute(
+                """
+                SELECT sample_id
+                FROM samples
+                WHERE sample_id LIKE %s
+                ORDER BY sample_id DESC
+                """,
+                (
+                    f"{prefix}%",
+                )
+            )
 
-    return sample_ids
+            existing_ids = [
+                row[0]
+                for row in cur.fetchall()
+            ]
+
+
+            max_number = 0
+
+            for sample_id in existing_ids:
+
+                try:
+
+                    number = int(
+                        sample_id.split("-")[-1]
+                    )
+
+                    max_number = max(
+                        max_number,
+                        number
+                    )
+
+                except:
+                    pass
+
+
+            for i in range(quantity):
+
+                sample_ids.append(
+                    f"{prefix}{max_number+i+1:02d}"
+                )
+
+
+        else:
+
+            cur.execute(
+                """
+                SELECT COALESCE(
+                    MAX(
+                        CAST(
+                            REPLACE(sample_id, 'DEV-', '')
+                            AS INTEGER
+                        )
+                    ),
+                    0
+                )
+                FROM samples
+                WHERE sample_id LIKE 'DEV-%'
+                """
+            )
+
+            max_number = cur.fetchone()[0]
+
+
+            for i in range(quantity):
+
+                sample_ids.append(
+                    f"DEV-{max_number+i+1:06d}"
+                )
+
+
+        return sample_ids
+
+
+    finally:
+
+        conn.close()
 
 
 # GET SAMPLE TYPE
@@ -340,31 +412,40 @@ def generate_sample_name(
         sample_type_code
     )
 
-    batch_date = received_date.strftime(
-        "%Y-%m"
-    )
-
     return (
         f"{product_name} "
         f"{sample_type_name} "
-        f"{batch_date}"
+        f"{received_date}"
     )
 
 def create_samples(
-    product_code,
-    product_name,
-    sample_type_code,
-    quantity,
-    received_date,
-    bin_location,
-    remarks,
-    created_by='Justin'
+    product_code=None,
+    product_name=None,
+    prototype_name=None,
+    sample_type_code=None,
+    quantity=1,
+    received_date=None,
+    bin_location=None,
+    remarks=None,
+    photos=None,
+    created_by=None
 ):
-    if not product_exists(product_code):
+    # Commercial sample ->  product_code = 0266661-001
+    if product_code:
 
-        raise ValueError(
-            f"Product {product_code} not found."
-        )
+        if not product_exists(product_code):
+
+            raise ValueError(
+                f"Product {product_code} not found."
+            )
+    # Prototype -> product_code = NULL, prototype_name = New Sample Name
+    else:
+
+        if not prototype_name:
+
+            raise ValueError(
+                "Prototype name required when product is not selected."
+            )
 
     conn = get_connection()
     cur = conn.cursor()
@@ -377,25 +458,34 @@ def create_samples(
             quantity
         )
 
-        sample_name = generate_sample_name(
-            product_name,
-            sample_type_code,
-            received_date
+        sample_base_name = (
+            product_name
+
+            if product_name
+            else prototype_name
         )
 
-        batch = received_date.strftime(
+        batch_date = received_date.strftime(
             "%Y-%m"
+        )
+
+        sample_name = generate_sample_name(
+            sample_base_name,
+            sample_type_code,
+            batch_date
         )
 
         created_samples = []
 
         for sample_id in sample_ids:
 
+            # temp qr storage
             qr_path = generate_sample_qr(
                 sample_id,
                 sample_name
             )
 
+            # store in supabase storage
             qr_url = upload_sample_qr(
                 sample_id,
                 qr_path
@@ -408,34 +498,42 @@ def create_samples(
                 INSERT INTO samples (
                     sample_id,
                     product_code,
+                    product_name,
+                    prototype_name,
                     sample_name,
                     sample_type_code,
-                    sample_status,
+                    received_date,
                     bin_location,
                     remarks,
                     qr_code_url,
-                    received_date,
-                    created_batch,
                     created_by
                 )
                 VALUES (
-                    %s,%s,%s,%s,
-                    'AVAILABLE',
-                    %s,%s,%s,%s,%s,%s
+                    %s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s
                 )
                 """,
                 (
                     sample_id,
                     product_code,
+                    product_name,
+                    prototype_name,
                     sample_name,
                     sample_type_code,
+                    received_date,
                     bin_location,
                     remarks,
                     qr_url,
-                    received_date,
-                    batch,
                     created_by
-                )            )
+                ) 
+            )
+
+            created_samples.append(
+                sample_id
+            )
+
+        conn.commit()
+
+        for sample_id in created_samples:
 
             create_sample_movement(
                 sample_id=sample_id,
@@ -444,12 +542,6 @@ def create_samples(
                 remarks=remarks or "Sample received into inventory",
                 performed_by=created_by
             )
-
-            created_samples.append(
-                sample_id
-            )
-
-        conn.commit()
 
         return created_samples
 
@@ -464,17 +556,29 @@ def create_samples(
     
 # BUILD A PREVIEW
 def preview_sample_creation(
-    product_code,
-    product_name,
-    sample_type_code,
-    quantity,
-    received_date
+    product_code=None,
+    product_name=None,
+    prototype_name=None,
+    sample_type_code=None,
+    quantity=1,
+    received_date=None
 ):
 
+    sample_base_name = (
+        product_name
+
+        if product_name
+        else prototype_name
+    )
+
+    batch_date = received_date.strftime(
+        "%Y-%m"
+    )
+
     sample_name = generate_sample_name(
-        product_name,
+        sample_base_name,
         sample_type_code,
-        received_date
+        batch_date
     )
 
     sample_ids = generate_sample_ids(
