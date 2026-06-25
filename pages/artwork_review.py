@@ -349,23 +349,49 @@ artwork_df = pd.DataFrame(
 # Filter
 # -----------------------------
 
-status_filter = st.multiselect(
-    "Status",
-    [
-        "Draft",
-        "Approved",
-        "Rejected",
-        "Released"
-    ],
-    default=[
-        "Draft"
-    ]
-)
+col1, col2 = st.columns(2)
+
+with col1:
+
+    status_filter = st.multiselect(
+        "Status",
+        [
+            "Draft",
+            "Approved",
+            "Rejected",
+            "Released"
+        ],
+        default=[
+            "Draft"
+        ]
+    )
+
+
+with col2:
+
+    product_options = sorted(
+        artwork_df["Product"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    selected_product = st.selectbox(
+        "Product",
+        ["All Products"] + product_options
+    )
 
 
 filtered_df = artwork_df[
     artwork_df["Status"].isin(status_filter)
 ]
+
+
+if selected_product != "All Products":
+
+    filtered_df = filtered_df[
+        filtered_df["Product"] == selected_product
+    ]
 
 
 st.subheader("Artwork Queue")
@@ -397,14 +423,21 @@ if filtered_df.empty:
 # Select Artwork
 # -----------------------------
 
-selected_file = st.selectbox(
-    "Select Artwork File",
-    filtered_df["File Path"]
+filtered_df["Display"] = (
+    filtered_df["Product"]
+    + " | "
+    + filtered_df["Artwork Group"]
+    + " | "
+    + filtered_df["Filename"]
 )
 
+selected_display = st.selectbox(
+    "Select Artwork File",
+    filtered_df["Display"]
+)
 
 artwork = filtered_df[
-    filtered_df["File Path"] == selected_file
+    filtered_df["Display"] == selected_display
 ].iloc[0]
 
 
