@@ -4,7 +4,7 @@ from streamlit_calendar import calendar
 
 from services.booking_service import (
     get_available_samples,
-    get_active_bookings,
+    get_booking_calendar,
     create_booking,
     return_booking
 )
@@ -18,7 +18,7 @@ st.set_page_config(
 st.title("📅 Sample Booking Dashboard")
 
 # dashboard counters
-active_bookings = get_active_bookings()
+active_bookings = get_booking_calendar()
 available_samples = get_available_samples()
 
 col1, col2 = st.columns(2)
@@ -45,10 +45,9 @@ for booking in active_bookings:
         booking_id,
         booked_by,
         purpose,
+        booking_start_date,
         expected_return_date,
-        sample_id,
-        sample_name,
-        product_code
+        samples
 
     ) = booking
 
@@ -56,18 +55,20 @@ for booking in active_bookings:
     calendar_events.append({
 
         "title":
-            f"{product_code} - {booked_by}",
+            f"{purpose} - {booked_by}",
 
         "start":
-            str(expected_return_date),
+            str(booking_start_date),
 
         "end":
             str(expected_return_date),
 
+        "allDay":
+            True,
+
         "extendedProps": {
 
-            "purpose": purpose,
-            "sample": sample_name,
+            "samples": samples,
             "booking_id": str(booking_id)
 
         }
@@ -105,7 +106,7 @@ for sample in available_samples:
 
 
     label = (
-        f"{product_code} | "
+        f"{sample_id} | "
         f"{sample_name}"
     )
 
@@ -205,28 +206,24 @@ for booking in active_bookings:
         purpose,
         booking_start_date,
         expected_return_date,
-        sample_id,
-        sample_name,
-        product_code
+        samples
 
     ) = booking
 
 
     with st.expander(
-        f"{product_code} - {booked_by}"
+        f"{purpose} - {booked_by}"
     ):
 
         st.write(
-            f"Sample: {sample_name}"
+            f"Samples: {samples}"
         )
 
-        st.write(
-            f"Purpose: {purpose}"
-        )
 
         st.write(
             f"Start date: {booking_start_date}"
         )
+
 
         st.write(
             f"Return date: {expected_return_date}"
@@ -234,7 +231,7 @@ for booking in active_bookings:
 
 
         if st.button(
-            "Return Sample",
+            "Return Booking",
             key=str(booking_id)
         ):
 

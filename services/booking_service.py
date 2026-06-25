@@ -1,7 +1,11 @@
-from datetime import datetime, date
 from services.database import get_connection
+from datetime import datetime, date
 
-# get available samples
+
+# -----------------------------------
+# Available samples for booking
+# -----------------------------------
+
 def get_available_samples():
 
     conn = get_connection()
@@ -22,6 +26,7 @@ def get_available_samples():
 
         WHERE
             s.sample_status = 'AVAILABLE'
+
         AND
             st.allow_booking = TRUE
 
@@ -36,7 +41,12 @@ def get_available_samples():
 
     return rows
 
-# create booking
+
+
+# -----------------------------------
+# Create booking
+# -----------------------------------
+
 def create_booking(
     booked_by,
     department,
@@ -54,7 +64,7 @@ def create_booking(
         cur = conn.cursor()
 
 
-        # booking header
+        # Create booking header
 
         cur.execute("""
             INSERT INTO bookings
@@ -62,15 +72,25 @@ def create_booking(
                 booked_by,
                 department,
                 purpose,
+                booking_status,
                 booking_start_date,
                 expected_return_date,
                 notes
             )
 
             VALUES
-            (%s,%s,%s,%s,%s,%s)
+            (
+                %s,
+                %s,
+                %s,
+                'ACTIVE',
+                %s,
+                %s,
+                %s
+            )
 
             RETURNING booking_id
+
         """,
         (
             booked_by,
@@ -81,10 +101,11 @@ def create_booking(
             notes
         ))
 
+
         booking_id = cur.fetchone()[0]
 
 
-        # booking items
+        # Add booking items
 
         for sample_id in sample_ids:
 
@@ -92,11 +113,17 @@ def create_booking(
                 INSERT INTO booking_items
                 (
                     booking_id,
-                    sample_id
+                    sample_id,
+                    item_status
                 )
 
                 VALUES
-                (%s,%s)
+                (
+                    %s,
+                    %s,
+                    'BOOKED'
+                )
+
             """,
             (
                 booking_id,
@@ -104,7 +131,8 @@ def create_booking(
             ))
 
 
-            # reserve sample
+
+            # Reserve sample
 
             cur.execute("""
                 UPDATE samples
@@ -112,13 +140,18 @@ def create_booking(
                 SET sample_status='RESERVED'
 
                 WHERE sample_id=%s
+
             """,
-            (sample_id,))
+            (
+                sample_id,
+            ))
+
 
 
         conn.commit()
 
         return booking_id
+
 
 
     except Exception:
@@ -127,73 +160,93 @@ def create_booking(
         raise
 
 
+
     finally:
 
         cur.close()
         conn.close()
 
-# active bookings
-def get_active_bookings():
 
-    conn=get_connection()
-    cur=conn.cursor()
 
+
+# -----------------------------------
+# Calendar data
+# -----------------------------------
+
+def get_booking_calendar():
+
+    conn = get_connection()
+    cur = conn.cursor()
 
     cur.execute("""
         SELECT
-
             b.booking_id,
             b.booked_by,
             b.purpose,
+            b.booking_start_date,
             b.expected_return_date,
 
-            s.sample_id,
-            s.sample_name,
-            s.product_code
-
+            STRING_AGG(
+                s.product_code,
+                ', '
+            ) AS samples
 
         FROM bookings b
 
-
         JOIN booking_items bi
-
-        ON b.booking_id=bi.booking_id
-
+            ON b.booking_id = bi.booking_id
 
         JOIN samples s
+            ON bi.sample_id = s.sample_id
 
-        ON bi.sample_id=s.sample_id
+        WHERE b.booking_status = 'ACTIVE'
 
-
-        WHERE
-        b.booking_status='ACTIVE'
-
+        GROUP BY
+            b.booking_id,
+            b.booked_by,
+            b.purpose,
+            b.booking_start_date,
+            b.expected_return_date
 
         ORDER BY
-        b.expected_return_date
-
+            b.booking_start_date
     """)
 
-
-    rows=cur.fetchall()
-
+    rows = cur.fetchall()
 
     cur.close()
     conn.close()
 
-
     return rows
 
-# return booking
+
+
+
+# -----------------------------------
+# Active bookings
+# -----------------------------------
+
+def get_active_bookings():
+
+    return get_booking_calendar()
+
+
+
+
+# -----------------------------------
+# Return booking
+# -----------------------------------
+
 def return_booking(booking_id):
 
-    conn=get_connection()
-    cur=conn.cursor()
+    conn = get_connection()
+    cur = conn.cursor()
 
 
     try:
 
-        # release samples
+
+        # Release samples
 
         cur.execute("""
             UPDATE samples
@@ -203,77 +256,63 @@ def return_booking(booking_id):
             WHERE sample_id IN
 
             (
+
                 SELECT sample_id
 
                 FROM booking_items
 
                 WHERE booking_id=%s
+
             )
 
         """,
-        (booking_id,))
+        (
+            booking_id,
+        ))
 
 
-        # update booking
+
+        # Update booking items
 
         cur.execute("""
-            UPDATE bookings
+            UPDATE booking_items
 
             SET
-            booking_status='RETURNED',
-            returned_date=%s
+                item_status='RETURNED',
+                returned_date=NOW()
 
             WHERE booking_id=%s
 
         """,
         (
-            datetime.utcnow(),
-            booking_id
+            booking_id,
         ))
 
 
-        conn.commit()
 
-
-    except Exception:
-
-        conn.rollback()
-        raise
-
-
-    finally:
-
-        cur.close()
-        conn.close()
-
-# overdue check
-def mark_overdue_bookings():
-
-    today = date.today()
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    try:
+        # Update booking
 
         cur.execute("""
             UPDATE bookings
 
-            SET booking_status = 'OVERDUE'
+            SET
 
-            WHERE expected_return_date < %s
+                booking_status='RETURNED',
 
-            AND booking_status = 'ACTIVE'
+                returned_date=NOW()
+
+
+            WHERE booking_id=%s
 
         """,
-        (today,))
+        (
+            booking_id,
+        ))
 
 
-        updated_count = cur.rowcount
 
         conn.commit()
 
-        return updated_count
 
 
     except Exception:
@@ -282,7 +321,43 @@ def mark_overdue_bookings():
         raise
 
 
+
     finally:
 
         cur.close()
         conn.close()
+
+
+
+
+# -----------------------------------
+# Mark overdue
+# -----------------------------------
+
+def mark_overdue_bookings():
+
+    conn = get_connection()
+    cur = conn.cursor()
+
+
+    cur.execute("""
+        UPDATE bookings
+
+        SET booking_status='OVERDUE'
+
+
+        WHERE
+
+        expected_return_date < CURRENT_DATE
+
+        AND
+
+        booking_status='ACTIVE'
+
+    """)
+
+
+    conn.commit()
+
+    cur.close()
+    conn.close()
