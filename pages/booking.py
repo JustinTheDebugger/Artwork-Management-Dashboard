@@ -9,6 +9,13 @@ from services.booking_service import (
     return_booking
 )
 
+from services.booking_service import (
+    get_available_samples,
+    get_active_bookings,
+    create_booking,
+    return_booking
+)
+
 # page header
 st.set_page_config(
     page_title="Sample Booking",
@@ -18,7 +25,7 @@ st.set_page_config(
 st.title("📅 Sample Booking Dashboard")
 
 # dashboard counters
-active_bookings = get_booking_calendar()
+active_bookings = get_active_bookings()
 available_samples = get_available_samples()
 
 col1, col2 = st.columns(2)
