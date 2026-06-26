@@ -3,167 +3,97 @@ import pandas as pd
 import plotly.express as px
 from db import get_all_artworks
 
+from services.dashboard_service import (
+    get_artwork_kpis
+)
+
+from services.notification_service import (
+    get_notifications
+)
+
 st.set_page_config(
-    page_title="Artwork Dashboard",
+    page_title="NexaFlow360 Dashboard",
     page_icon="🎨",
     layout="wide"
 )
 
-st.title("🎨 Artwork Management Dashboard")
+st.markdown("""
+<h1 style="margin-bottom:0;">
+    NexaFlow360 
+    <span style="font-size:20px; font-weight:400; color:#666;">
+        — Complete Product Lifecycle Visibility
+    </span>
+</h1>
+""", unsafe_allow_html=True)
 
-# --------------------------------------------------
-# Load Data
-# --------------------------------------------------
+kpis = get_artwork_kpis()
 
-df = get_all_artworks()
-
-# --------------------------------------------------
-# KPI Calculations
-# --------------------------------------------------
-
-total_products = df["product_code"].nunique()
-
-total_artworks = len(df)
-
-product_summary = (
-    df.groupby(
-        ["product_code", "product_name"]
-    )
-    .size()
-    .reset_index(name="artwork_count")
-)
-
-complete_products = len(
-    product_summary[
-        product_summary["artwork_count"] >= 5
-    ]
-)
-
-missing_products = (
-    total_products - complete_products
-)
-
-# --------------------------------------------------
-# KPI Cards
-# --------------------------------------------------
 
 col1, col2, col3, col4 = st.columns(4)
 
+
 with col1:
     st.metric(
-        "Products",
-        f"{total_products:,}"
+        "Draft",
+        kpis["Draft"]
     )
+
 
 with col2:
     st.metric(
-        "Artwork Files",
-        f"{total_artworks:,}"
+        "Approved",
+        kpis["Approved"]
     )
+
 
 with col3:
     st.metric(
-        "Complete Products",
-        f"{complete_products:,}"
+        "Released",
+        kpis["Released"]
     )
+
 
 with col4:
     st.metric(
-        "Missing Products",
-        f"{missing_products:,}"
+        "Rejected",
+        kpis["Rejected"]
     )
 
 st.divider()
 
-# --------------------------------------------------
-# Charts
-# --------------------------------------------------
+st.subheader("🔔 Action Center")
 
-left, right = st.columns(2)
 
-with left:
+notifications = get_notifications()
 
-    st.subheader("Artwork Coverage")
 
-    coverage_df = (
-        df.groupby("artwork_group")
-        .size()
-        .reset_index(name="count")
+if not notifications:
+
+    st.success(
+        "Everything is up to date."
     )
 
-    fig = px.bar(
-        coverage_df,
-        x="artwork_group",
-        y="count"
-    )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+else:
 
-with right:
+    for item in notifications:
 
-    st.subheader("Top Products")
+        if item["type"] == "warning":
 
-    top_products = (
-        product_summary
-        .sort_values(
-            "artwork_count",
-            ascending=False
-        )
-        .head(10)
-    )
+            st.warning(
+                f'{item["title"]}: {item["count"]}'
+            )
 
-    fig = px.bar(
-        top_products,
-        x="artwork_count",
-        y="product_name",
-        orientation="h"
-    )
 
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+        elif item["type"] == "success":
 
-st.divider()
+            st.success(
+                f'{item["title"]}: {item["count"]}'
+            )
 
-# --------------------------------------------------
-# Search
-# --------------------------------------------------
 
-st.subheader("Search Products")
+        elif item["type"] == "error":
 
-search = st.text_input(
-    "",
-    placeholder="Search by product code or product name..."
-)
-
-filtered_df = product_summary.copy()
-
-if search:
-
-    filtered_df = filtered_df[
-        filtered_df["product_code"]
-        .astype(str)
-        .str.contains(search, case=False)
-        |
-        filtered_df["product_name"]
-        .astype(str)
-        .str.contains(search, case=False)
-    ]
-
-# --------------------------------------------------
-# Product Summary
-# --------------------------------------------------
-
-st.subheader("Product Summary")
-
-st.dataframe(
-    filtered_df.sort_values(
-        "product_name"
-    ),
-    use_container_width=True,
-    hide_index=True
-)
+            st.error(
+                f'{item["title"]}: {item["count"]}'
+            )

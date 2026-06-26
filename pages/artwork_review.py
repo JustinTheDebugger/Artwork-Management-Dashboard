@@ -1,310 +1,10 @@
-# import streamlit as st
-# import pandas as pd
-
-# from services.artwork_review_service import (
-#     get_artwork_review_queue
-# )
-
-# from db import (
-#     get_upload_batches,
-#     get_upload_files
-# )
-
-
-# st.set_page_config(
-#     page_title="Artwork Review",
-#     layout="wide"
-# )
-
-
-# st.title("📝 Artwork Review")
-
-
-# # -----------------------------
-# # Upload Batch List
-# # -----------------------------
-
-# batches = get_upload_batches()
-
-
-# if not batches:
-#     st.info("No upload batches found.")
-#     st.stop()
-
-# batch_df = pd.DataFrame(
-#     batches,
-#     columns=[
-#         "Upload ID",
-#         "Files",
-#         "Products",
-#         "Uploaded",
-#         "Status"
-#     ]
-# )
-
-
-# st.subheader("Upload Batches")
-
-
-# st.dataframe(
-#     batch_df,
-#     width="stretch",
-#     hide_index=True
-# )
-
-
-# # -----------------------------
-# # Select Batch
-# # -----------------------------
-
-# batch_options = {
-#     f"{row['Upload ID']} - {row['Products']}": row["Upload ID"]
-#     for _, row in batch_df.iterrows()
-# }
-
-
-# selected_batch_display = st.selectbox(
-#     "Select Upload Batch",
-#     batch_options.keys()
-# )
-
-
-# selected_batch = batch_options[
-#     selected_batch_display
-# ]
-
-
-# # -----------------------------
-# # Artwork Files
-# # -----------------------------
-
-# if selected_batch:
-
-#     files = get_upload_files(
-#         selected_batch
-#     )
-
-
-#     if not files:
-#         st.warning(
-#             "No artwork files found in this batch."
-#         )
-#         st.stop()
-
-
-#     files_df = pd.DataFrame(
-#         files,
-#         columns=[
-#             "ID",
-#             "Product",
-#             "Artwork Group",
-#             "Filename",
-#             "File Path",
-#             "Storage URL",
-#             "Status",
-#             "Uploaded"
-#         ]
-#     )
-
-
-#     st.subheader(
-#         f"Artwork Files: {selected_batch}"
-#     )
-
-
-#     # Display cleaner table
-
-#     display_df = files_df[
-#         [
-#             "Product",
-#             "Artwork Group",
-#             "Filename",
-#             "Status",
-#             "Uploaded"
-#         ]
-#     ]
-
-#     st.dataframe(
-#         display_df,
-#         width="stretch",
-#         hide_index=True
-#     )
-
-
-#     # -----------------------------
-#     # Select Artwork
-#     # -----------------------------
-
-#     selected_file = st.selectbox(
-#         "Select Artwork File",
-#         files_df["Filename"]
-#     )
-
-
-#     artwork = files_df[
-#         files_df["Filename"] == selected_file
-#     ].iloc[0]
-
-
-#     # -----------------------------
-#     # Artwork Detail
-#     # -----------------------------
-
-#     st.divider()
-
-#     st.subheader("Artwork Detail")
-
-
-#     col1, col2 = st.columns(2)
-
-
-#     with col1:
-
-#         st.write(
-#             "**Product**"
-#         )
-#         st.write(
-#             artwork["Product"]
-#         )
-
-
-#         st.write(
-#             "**Artwork Group**"
-#         )
-#         st.write(
-#             artwork["Artwork Group"]
-#         )
-
-#         st.write("**Artwork File**")
-
-#         if pd.notna(artwork["Storage URL"]) and artwork["Storage URL"]:
-
-#             st.markdown(
-#                 f"📄 [{artwork['Filename']}]({artwork['Storage URL']})"
-#             )
-
-#         else:
-
-#             st.write(
-#                 f"📄 {artwork['Filename']}"
-#             )
-
-
-#     with col2:
-
-#         st.write(
-#             "**Current Status**"
-#         )
-#         st.write(
-#             artwork["Status"]
-#         )
-
-
-#         st.write(
-#             "**Uploaded Date**"
-#         )
-#         st.write(
-#             artwork["Uploaded"]
-#         )
-
-
-#         st.write(
-#             "**File ID**"
-#         )
-#         st.write(
-#             artwork["ID"]
-#         )
-
-
-#     # -----------------------------
-#     # Review
-#     # -----------------------------
-
-#     st.divider()
-
-#     st.subheader("Review")
-
-
-#     reviewed_by = st.text_input(
-#         "Reviewed By"
-#     )
-
-#     review_comments = st.text_area(
-#         "Comments"
-#     )
-
-
-#     col1, col2 = st.columns(2)
-
-#     with col1:
-
-#         if st.button(
-#             "✅ Approve",
-#             width="stretch"
-#         ):
-
-#             if not reviewed_by.strip():
-#                 st.error("Reviewer name is required.")
-
-#             else:
-
-#                 review_status = "Approved"
-
-#                 st.write(
-#                     {
-#                         "artwork_id": artwork["ID"],
-#                         "reviewed_by": reviewed_by,
-#                         "review_status": review_status,
-#                         "review_comments": review_comments
-#                     }
-#                 )
-
-#                 st.success(
-#                     "Artwork approved."
-#                 )
-
-
-#     with col2:
-
-#         if st.button(
-#             "🚫 Reject",
-#             width="stretch"
-#         ):
-
-#             if not reviewed_by.strip():
-
-#                 st.error(
-#                     "Reviewer name is required."
-#                 )
-
-#             elif not review_comments.strip():
-
-#                 st.error(
-#                     "Comments are required when rejecting artwork."
-#                 )
-
-#             else:
-
-#                 review_status = "Rejected"
-
-#                 st.write(
-#                     {
-#                         "artwork_id": artwork["ID"],
-#                         "reviewed_by": reviewed_by,
-#                         "review_status": review_status,
-#                         "review_comments": review_comments
-#                     }
-#                 )
-
-#                 st.error(
-#                     "Artwork rejected."
-#                 )
-
 import streamlit as st
 import pandas as pd
 
 from services.artwork_review_service import (
-    get_artwork_review_queue
+    get_draft_artwork_queue,
+    save_artwork_review,
+    update_artwork_status
 )
 
 
@@ -313,19 +13,41 @@ st.set_page_config(
     layout="wide"
 )
 
+if "clear_review" not in st.session_state:
+    st.session_state.clear_review = False
+
+
+if st.session_state.clear_review:
+
+    st.session_state.reviewed_by = ""
+    st.session_state.review_comments = ""
+
+    st.session_state.clear_review = False
+
+
+if "review_complete" not in st.session_state:
+    st.session_state.review_complete = False
+
+
+if "review_message" not in st.session_state:
+    st.session_state.review_message = None
+
 
 st.title("📝 Artwork Review")
-
 
 # -----------------------------
 # Review Queue
 # -----------------------------
 
-artworks = get_artwork_review_queue()
+artworks = get_draft_artwork_queue()
 
 
 if not artworks:
-    st.info("No artwork found.")
+
+    st.success(
+        "🎉 No artwork pending review."
+    )
+
     st.stop()
 
 
@@ -345,101 +67,46 @@ artwork_df = pd.DataFrame(
 )
 
 
+st.info(
+    f"Pending Reviews: {len(artwork_df)}"
+)
+
+
 # -----------------------------
-# Filter
+# Select Product
 # -----------------------------
 
-col1, col2 = st.columns(2)
-
-with col1:
-
-    status_filter = st.multiselect(
-        "Status",
-        [
-            "Draft",
-            "Approved",
-            "Rejected",
-            "Released"
-        ],
-        default=[
-            "Draft"
-        ]
-    )
+product_list = sorted(
+    artwork_df["Product"]
+    .unique()
+)
 
 
-with col2:
+selected_product = st.selectbox(
+    "Product",
+    product_list,
+    key="review_product"
+)
 
-    product_options = sorted(
-        artwork_df["Product"]
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    selected_product = st.selectbox(
-        "Product",
-        ["All Products"] + product_options
-    )
-
-
-filtered_df = artwork_df[
-    artwork_df["Status"].isin(status_filter)
+product_df = artwork_df[
+    artwork_df["Product"]
+    == selected_product
 ]
 
 
-if selected_product != "All Products":
-
-    filtered_df = filtered_df[
-        filtered_df["Product"] == selected_product
-    ]
-
-
-st.subheader("Artwork Queue")
-
-
-st.dataframe(
-    filtered_df[
-        [
-            "Artwork Group",
-            "File Path",
-            "Status",
-            "Uploaded"
-        ]
-    ],
-    width="stretch",
-    hide_index=True
-)
-
-
-if filtered_df.empty:
-    st.info(
-        "No artwork matches the selected status."
-    )
-    st.stop()
-
-
-
 # -----------------------------
-# Select Artwork
+# Select file
 # -----------------------------
 
-filtered_df["Display"] = (
-    filtered_df["Product"]
-    + " | "
-    + filtered_df["Artwork Group"]
-    + " | "
-    + filtered_df["Filename"]
+selected_filename = st.selectbox(
+    "Artwork File",
+    product_df["Filename"]
 )
 
-selected_display = st.selectbox(
-    "Select Artwork File",
-    filtered_df["Display"]
-)
-
-artwork = filtered_df[
-    filtered_df["Display"] == selected_display
+artwork = product_df[
+    product_df["Filename"]
+    == selected_filename
 ].iloc[0]
-
 
 
 # -----------------------------
@@ -491,6 +158,10 @@ with col1:
             f"📄 {artwork['File Path']}"
         )
 
+    st.code(
+        artwork["File Path"]
+    )
+
 
 with col2:
 
@@ -529,24 +200,32 @@ with col2:
         artwork["ID"]
     )
 
-
-
 # -----------------------------
 # Review
 # -----------------------------
 
 st.divider()
 
+if st.session_state.review_message:
+
+    st.success(
+        st.session_state.review_message
+    )
+
+    st.session_state.review_message = None
+
 st.subheader("Review")
 
 
 reviewed_by = st.text_input(
-    "Reviewed By"
+    "Reviewed By",
+    key="reviewed_by"
 )
 
 
 review_comments = st.text_area(
-    "Comments"
+    "Comments",
+    key="review_comments"
 )
 
 
@@ -570,18 +249,25 @@ with col1:
 
             review_status = "Approved"
 
-            st.write(
-                {
-                    "artwork_id": artwork["ID"],
-                    "reviewed_by": reviewed_by,
-                    "review_status": review_status,
-                    "review_comments": review_comments
-                }
+            save_artwork_review(
+                artwork["ID"],
+                reviewed_by,
+                review_status,
+                review_comments
             )
 
-            st.success(
-                "Artwork approved."
+            update_artwork_status(
+                artwork["ID"],
+                review_status
             )
+
+            st.session_state.clear_review = True
+
+            st.session_state.review_message = (
+                "✅ Artwork approved successfully."
+            )
+
+            st.rerun()
 
 
 with col2:
@@ -607,15 +293,24 @@ with col2:
 
             review_status = "Rejected"
 
-            st.write(
-                {
-                    "artwork_id": artwork["ID"],
-                    "reviewed_by": reviewed_by,
-                    "review_status": review_status,
-                    "review_comments": review_comments
-                }
+            save_artwork_review(
+                artwork["ID"],
+                reviewed_by,
+                review_status,
+                review_comments
             )
 
-            st.error(
-                "Artwork rejected."
+            update_artwork_status(
+                artwork["ID"],
+                review_status
             )
+
+            st.session_state.clear_review = True
+
+            st.session_state.review_message = (
+                "🚫 Artwork rejected successfully."
+            )
+
+            st.rerun()
+
+            

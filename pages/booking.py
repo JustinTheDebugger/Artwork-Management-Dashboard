@@ -4,13 +4,6 @@ from streamlit_calendar import calendar
 
 from services.booking_service import (
     get_available_samples,
-    get_booking_calendar,
-    create_booking,
-    return_booking
-)
-
-from services.booking_service import (
-    get_available_samples,
     get_active_bookings,
     create_booking,
     return_booking
