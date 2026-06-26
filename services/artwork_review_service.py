@@ -50,31 +50,6 @@ def get_draft_artwork_queue():
 
     return rows
 
-def update_artwork_status(
-    artwork_id,
-    status
-):
-
-    conn = get_connection()
-    cur = conn.cursor()
-
-    cur.execute(
-        """
-        UPDATE artwork_files
-        SET review_status = %s
-        WHERE id = %s
-        """,
-        (
-            status,
-            artwork_id
-        )
-    )
-
-    conn.commit()
-
-    cur.close()
-    conn.close()
-
 # Save review
 def save_artwork_review(
     artwork_id,
