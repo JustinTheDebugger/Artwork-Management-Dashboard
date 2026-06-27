@@ -1,14 +1,10 @@
-from datetime import datetime, date
-from services.database import get_connection
-
 from db import get_connection
 
 
-def get_draft_artwork_queue():
+def get_approved_artworks():
 
     conn = get_connection()
     cur = conn.cursor()
-
 
     cur.execute(
         """
@@ -20,101 +16,116 @@ def get_draft_artwork_queue():
                 af.full_product_code,
                 'Unknown Product'
             ) AS product_name,
+            af.full_product_code,
             af.artwork_group,
             af.filename,
-            af.file_path,
             af.status,
-            af.upload_id,
-            af.uploaded_at,
-            af.storage_url
+            af.uploaded_at
 
         FROM artwork_files af
 
         LEFT JOIN products p
             ON af.full_product_code = p.product_code
 
-        WHERE af.status = 'Draft'
+        WHERE af.status = 'Approved'
 
         ORDER BY
             af.uploaded_at ASC
         """
     )
 
-
     rows = cur.fetchall()
-
 
     cur.close()
     conn.close()
-
 
     return rows
 
-# Save review
-def save_artwork_review(
+
+
+def release_artwork(
     artwork_id,
-    reviewed_by,
-    review_status,
-    review_comments
+    released_by
 ):
 
     conn = get_connection()
     cur = conn.cursor()
+
+
+    # Get artwork identity
 
     cur.execute(
         """
-        INSERT INTO artwork_reviews
-        (
-            artwork_id,
-            reviewed_by,
-            status,
-            review_comments,
-            reviewed_at
-        )
-        VALUES
-        (
-            %s,
-            %s,
-            %s,
-            %s,
-            NOW()
-        )
+        SELECT
+            full_product_code,
+            artwork_group
+
+        FROM artwork_files
+
+        WHERE id = %s
         """,
         (
             artwork_id,
-            reviewed_by,
-            review_status,
-            review_comments
         )
     )
 
-    conn.commit()
 
-    cur.close()
-    conn.close()
+    artwork = cur.fetchone()
 
-# Update artwork status
-def update_artwork_status(
-    artwork_id,
-    status
-):
 
-    conn = get_connection()
-    cur = conn.cursor()
+    if not artwork:
+
+        raise Exception(
+            "Artwork not found"
+        )
+
+
+    product_code = artwork[0]
+    artwork_group = artwork[1]
+
+
+    # Remove previous release
 
     cur.execute(
         """
         UPDATE artwork_files
-        SET status = %s
+
+        SET status = 'Superseded'
+
+        WHERE
+            full_product_code = %s
+            AND artwork_group = %s
+            AND status = 'Released'
+        """,
+        (
+            product_code,
+            artwork_group
+        )
+    )
+
+
+    # Release selected artwork
+
+    cur.execute(
+        """
+        UPDATE artwork_files
+
+        SET
+            status = 'Released',
+            released_by = %s,
+            released_at = NOW()
+
         WHERE id = %s
         """,
         (
-            status,
+            released_by,
             artwork_id
         )
     )
 
+
     conn.commit()
+
 
     cur.close()
     conn.close()
