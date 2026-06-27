@@ -60,6 +60,12 @@ artwork_tracker = st.Page(
     icon="📋"
 )
 
+artwork_library = st.Page(
+    "pages/artwork_library.py",
+    title="Artwork Timeline",
+    icon="📋"
+)
+
 sample_dashboard = st.Page(
     "pages/sample_dashboard.py",
     title="Dashboard",
@@ -100,7 +106,8 @@ pg = st.navigation(
             artwork_dashboard,
             artwork_tracker,
             artwork_review,
-            artwork_release
+            artwork_release,
+            artwork_library
         ],
         "Sample Management": [
             sample_dashboard,
